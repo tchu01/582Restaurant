@@ -1,4 +1,11 @@
 import random, operator, nltk
+from nltk.corpus import stopwords as sw
+
+# Removes stopwords from a paragraph
+def remove_stopwords(paragraph):
+   short = paragraph.split()
+   short = [word for word in short if word not in sw.words("english")]
+   return ' '.join(short) 
 
 # Finds the average score of food, service, venue for each review
 def average_total_score(review):
@@ -67,3 +74,5 @@ if __name__ == '__main__':
 
    sents = [["hello", "tim"], ["bye", "tim", "chu"]]
    print(avg_sent_length(sents))
+
+   print(remove_stopwords("Hello this is my sentence"))
