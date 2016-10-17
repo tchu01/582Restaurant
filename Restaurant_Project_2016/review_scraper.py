@@ -3,6 +3,16 @@ import unicodedata
 import re
 
 regex = ['REVIEWER', 'NAME', 'ADDRESS', 'CITY', 'FOOD', 'SERVICE', 'VENUE', 'OVERALL']
+regexs= [("b*'*REVIEWER:*(.*)'*", 'REVIEWER'),
+		 ("b*'*NAME:*(.*)'*", 'NAME'),
+		 ("b*'*ADDRESS:*(.*)'*", 'ADDRESS'),
+		 ("b*'*CITY:*(.*)'*", 'CITY'),
+		 ("b*'*FOOD:*(.*)'*", 'FOOD'),
+		 ("b*'*SERVICE:*(.*)'*", 'SERVICE'),
+		 ("b*'*VENUE:*(.*)'*", 'VENUE'),
+		 ("b*'*OVERALL:*(.*)'*", 'OVERALL'),
+		 ("b*'*RATING:*(.*)'*", 'OVERALL')]
+
 
 def scrape_page(page, reviewer):
 	data_dict = {}
@@ -35,20 +45,37 @@ def scrape_page(page, reviewer):
 	ind = next(i for i, string in enumerate(p_stuff) if 'WRITTEN REVIEW' in str(string))
 	p_stuff[ind] = str(p_stuff[ind]).replace('WRITTEN REVIEW', "")
 	regex_pattern = "|".join(regex)
-	data_dict['review'] = p_stuff[-1 * ind:]
-	print(len(p_stuff))
-	for p in p_stuff:
-		print(p)
+	data_dict['review'] = p_stuff[ind - len(p_stuff):]
+	p_stuff = [str(p) for p in p_stuff]
+	#print(len(p_stuff))
 
-	for reg in regex:
+	for i in range(0, len(p_stuff)):
+		p_stuff[i] = p_stuff[i].replace('"', "'")
+		p_stuff[i] = p_stuff[i].replace('\\n', '')
+
+	#for p in p_stuff:
+	#	print(p)
+
+	for reg in regexs:
+		#print('Reg[1]: %s' % reg[1])
 		reg_found = False
 		for line in p_stuff:
-			match = re.match("aasfasfsfasdf", str(line))
+			match = re.match(reg[0], str(line))
 			if match:
 				reg_found = True
-				data_dict[reg] = match.group(1)
+				data_dict[reg[1]] = match.group(1)
 				break
 		if not reg_found:
-			data_dict[reg] = None
-		
+			reg_string = reg[1] + r'(:*)(.*?)REVIEWER|NAME|ADDRESS|CITY|FOOD|SERVICE|VENUE|OVERALL'
+			match = re.match(reg_string, str(line))
+			if match:
+				data_dict[reg[1]] = match.group(1)
+			else:
+				data_dict[reg[1]] = None
+
+	#print(data_dict)
+	#if 'Nupur Garg' in data_dict['REVIEWER']:
+	#	return None
 	return data_dict
+
+	#REVIEWER(:*)(.*?)REVIEWER|NAME|ADDRESS|CITY|FOOD|SERVICE|VENUE|OVERALL
