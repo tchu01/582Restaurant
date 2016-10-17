@@ -3,15 +3,14 @@ import unicodedata
 import re
 
 regex = ['REVIEWER', 'NAME', 'ADDRESS', 'CITY', 'FOOD', 'SERVICE', 'VENUE', 'OVERALL']
-regexs= [("b*'*REVIEWER:*(.*)'*", 'REVIEWER'),
-		 ("b*'*NAME:*(.*)'*", 'NAME'),
+regexs= [("b*'*NAME:*(.*)'*", 'NAME'),
 		 ("b*'*ADDRESS:*(.*)'*", 'ADDRESS'),
 		 ("b*'*CITY:*(.*)'*", 'CITY'),
 		 ("b*'*FOOD:*(.*)'*", 'FOOD'),
 		 ("b*'*SERVICE:*(.*)'*", 'SERVICE'),
 		 ("b*'*VENUE:*(.*)'*", 'VENUE'),
 		 ("b*'*OVERALL:*(.*)'*", 'OVERALL'),
-		 ("b*'*RATING:*(.*)'*", 'OVERALL')]
+		 ("b*'*RATING:*(.*)'*", 'RATING')]
 
 
 def scrape_page(page, reviewer):
@@ -45,9 +44,7 @@ def scrape_page(page, reviewer):
 	ind = next(i for i, string in enumerate(p_stuff) if 'WRITTEN REVIEW' in str(string))
 	p_stuff[ind] = str(p_stuff[ind]).replace('WRITTEN REVIEW', "")
 	regex_pattern = "|".join(regex)
-	data_dict['review'] = p_stuff[ind - len(p_stuff):]
 	p_stuff = [str(p) for p in p_stuff]
-	#print(len(p_stuff))
 
 	for i in range(0, len(p_stuff)):
 		p_stuff[i] = p_stuff[i].replace('"', "'")
@@ -56,12 +53,15 @@ def scrape_page(page, reviewer):
 	#for p in p_stuff:
 	#	print(p)
 
+	data_dict['REVIEWER'] = reviewer
 	for reg in regexs:
 		#print('Reg[1]: %s' % reg[1])
 		reg_found = False
 		for line in p_stuff:
+			#print(line)
 			match = re.match(reg[0], str(line))
 			if match:
+				#print('FOUND IT')
 				reg_found = True
 				data_dict[reg[1]] = match.group(1)
 				break
@@ -73,9 +73,39 @@ def scrape_page(page, reviewer):
 			else:
 				data_dict[reg[1]] = None
 
-	#print(data_dict)
-	#if 'Nupur Garg' in data_dict['REVIEWER']:
-	#	return None
-	return data_dict
+	if 'Nupur' in data_dict['REVIEWER']:
+		return None
+	return clean_dict(data_dict, p_stuff[ind - len(p_stuff):])
+
+
+def clean_dict(d_dict, dict_rev):
+	if d_dict['RATING'] != None:
+		d_dict['OVERALL'] = d_dict['RATING']
+	d_dict.pop('RATING')
+
+	d_dict = {k:v.strip().replace("'", "") for k, v in d_dict.items() if v}
+	
+	d_dict['OVERALL'] = float(d_dict['OVERALL'][0])
+	d_dict['FOOD'] = float(d_dict['FOOD'][0])
+	d_dict['SERVICE'] = float(d_dict['SERVICE'][0])
+	d_dict['VENUE'] = float(d_dict['VENUE'][0])
+
+	d_dict['OVERALL'] = binary(d_dict['OVERALL'])
+	d_dict['FOOD'] = binary(d_dict['FOOD'])
+	d_dict['SERVICE'] = binary(d_dict['SERVICE'])
+	d_dict['VENUE'] = binary(d_dict['VENUE'])
+
+	d_dict['review'] = dict_rev
+	return d_dict
+
+def binary(item):
+	if item < 2.5:
+		return 0
+	else:
+		return 1
+
+#I will do this tomorrow in order to get rid of a bad paragraph that is in most reviews
+def remove_bad_elem(lst):
+	print("hi")
 
 	#REVIEWER(:*)(.*?)REVIEWER|NAME|ADDRESS|CITY|FOOD|SERVICE|VENUE|OVERALL

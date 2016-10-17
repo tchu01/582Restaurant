@@ -24,7 +24,7 @@ def main():
 						   os.walk("Review2"), 
 						   os.walk("Review3"))
 
-	#subdirectories = os.walk("Review1")
+	#subdirectories = os.walk("Review2")
 
 	data = []
 	for path in subdirectories:
@@ -34,8 +34,12 @@ def main():
 				        matchName.group(1).split('\\')[1] + 
 				        ' ' + 
 				        matchName.group(2).split('_')[0]))
+
+	data = [d for d in data if d]
+
 	for d in data:
 		print(d)
+	print(len(data))
 
 
 if (__name__ == '__main__'):
