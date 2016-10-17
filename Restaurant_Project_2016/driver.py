@@ -7,13 +7,17 @@ import re
 full = 0
 
 def test_string():
-	g = 'NAME: Arayas PlaceADDRESS: 10246 Main St cCITY: BellevueFOOD: 5SERVICE: 4VENUE: 5RATING: 5WRITTEN REVIEW:'
+	g = r'NAME: Arayas PlaceADDRESS: 10246 Main St cCITY: BellevueFOOD: 5SERVICE: 4VENUE: 5RATING: 5WRITTEN REVIEW:'
+	z = 'NAME: Bob'
 	regex = ['REVIEWER', 'NAME', 'ADDRESS', 'CITY', 'FOOD', 'SERVICE', 'VENUE', 'OVERALL']
 	regex_pattern = "|".join(regex)
-	reg = "(?=(" + regex[0] + "(:*)))(.*)(?=" + "|".join(regex) + "*)"
+	reg = 'NAME:*(.*?)' + regex_pattern  
+	#reg = "NAME:*(.*)"
 	print(reg)
-	mtch = re.match(reg, 'NAME: Arayas Place')
+	mtch = re.match(reg, g)
 	print(mtch.group(1))
+	
+
 
 def main():
 	subdirectories = chain(os.walk("Review1"), 
@@ -30,6 +34,13 @@ def main():
 				        matchName.group(1).split('\\')[1] + 
 				        ' ' + 
 				        matchName.group(2).split('_')[0]))
-	
+	for d in data:
+		print(d)
+
+
 if (__name__ == '__main__'):
 	main()
+
+
+#NAME:*(.*?)(REVIEWER|NAME|ADDRESS)
+#NAME:*(.*)
