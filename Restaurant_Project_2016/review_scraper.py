@@ -1,8 +1,15 @@
+# -*- coding: utf-8 -*-
+
 from bs4 import BeautifulSoup, NavigableString, Tag
 import unicodedata
 import re
 
+#("b*'*(NAME|Name)+:*(.*)'*", 'NAME')
+
+
+escapes = ''.join([chr(char) for char in range(1, 32)])
 regex = ['REVIEWER', 'NAME', 'ADDRESS', 'CITY', 'FOOD', 'SERVICE', 'VENUE', 'OVERALL']
+regex_format = ['Reviewer', 'Name', 'Address', 'City', 'Food', 'Service', 'Venue', 'Overall']
 regexs= [("b*'*NAME:*(.*)'*", 'NAME'),
 		 ("b*'*ADDRESS:*(.*)'*", 'ADDRESS'),
 		 ("b*'*CITY:*(.*)'*", 'CITY'),
@@ -61,17 +68,11 @@ def scrape_page(page, reviewer):
 			#print(line)
 			match = re.match(reg[0], str(line))
 			if match:
-				#print('FOUND IT')
 				reg_found = True
 				data_dict[reg[1]] = match.group(1)
 				break
 		if not reg_found:
-			reg_string = reg[1] + r'(:*)(.*?)REVIEWER|NAME|ADDRESS|CITY|FOOD|SERVICE|VENUE|OVERALL'
-			match = re.match(reg_string, str(line))
-			if match:
-				data_dict[reg[1]] = match.group(1)
-			else:
-				data_dict[reg[1]] = None
+			data_dict[reg[1]] = None
 
 	if 'Nupur' in data_dict['REVIEWER']:
 		return None
@@ -83,19 +84,32 @@ def clean_dict(d_dict, dict_rev):
 		d_dict['OVERALL'] = d_dict['RATING']
 	d_dict.pop('RATING')
 
-	d_dict = {k:v.strip().replace("'", "") for k, v in d_dict.items() if v}
+	d_dict = {k:v.strip().replace("'", "").replace("\\xc2\\xa0", "").replace("\\xe2\\x80\\x99", "`") for k, v
+	          in d_dict.items() if v}
 	
-	d_dict['OVERALL'] = float(d_dict['OVERALL'][0])
-	d_dict['FOOD'] = float(d_dict['FOOD'][0])
-	d_dict['SERVICE'] = float(d_dict['SERVICE'][0])
-	d_dict['VENUE'] = float(d_dict['VENUE'][0])
+	d_dict['OVERALL'] = float(d_dict['OVERALL'])
+	d_dict['FOOD'] = float(d_dict['FOOD'])
+	d_dict['SERVICE'] = float(d_dict['SERVICE'])
+	d_dict['VENUE'] = float(d_dict['VENUE'])
 
 	d_dict['OVERALL'] = binary(d_dict['OVERALL'])
 	d_dict['FOOD'] = binary(d_dict['FOOD'])
 	d_dict['SERVICE'] = binary(d_dict['SERVICE'])
 	d_dict['VENUE'] = binary(d_dict['VENUE'])
 
-	d_dict['review'] = dict_rev
+	#\\xc3\\xb1
+
+
+	d_dict['review'] = [x.replace("\\xe2\\x80\\x99", "`")for x in remove_b(dict_rev)]
+	d_dict['review'] = [x.replace("\\xc2\\xa0", "") for x in d_dict['review']]
+	d_dict['review'] = [x.replace("\\xc3\\xb1", "n") for x in d_dict['review']]
+	d_dict['review'] = [x.replace("\\xe2\\x80\\xa6", "...") for x in d_dict['review']]
+	d_dict['review'] = [x.replace("\\xe2\\x80\\x93", "-") for x in d_dict['review']]
+
+	d_dict['review'] = remove_bad_elem(d_dict['review'])
+	#for par in d_dict['review']:
+	#	print("Len: %s  Par: %s\n" % (len(par), par))
+
 	return d_dict
 
 def binary(item):
@@ -104,8 +118,15 @@ def binary(item):
 	else:
 		return 1
 
+def remove_b(lst):
+	return [x.replace("b'", "'") for x in lst]
+
+
 #I will do this tomorrow in order to get rid of a bad paragraph that is in most reviews
 def remove_bad_elem(lst):
-	print("hi")
+	return [x for x in lst if len(x) > 10]
 
 	#REVIEWER(:*)(.*?)REVIEWER|NAME|ADDRESS|CITY|FOOD|SERVICE|VENUE|OVERALL
+
+
+#wants all training done so he can run everything separate from each other
