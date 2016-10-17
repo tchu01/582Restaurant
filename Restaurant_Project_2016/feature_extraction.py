@@ -83,16 +83,17 @@ def paragraph_features(paragraph):
    split_paragraph_by_period = split_paragraph_by_period.split('.')
    split_paragraph_by_period = [sentence.split() for sentence in split_paragraph_by_period]
 
-   features = {'lexical_diversity':lexical_diversity(split_paragraph_by_space), 
+   features = {#'lexical_diversity':lexical_diversity(split_paragraph_by_space), 
                'average_sent_length':avg_sent_length(split_paragraph_by_period)} 
    return features 
+   #return {}
 
 full = 0
 
 def scrape1():
    subdirectories = chain(os.walk("Review1"),
-                          os.walk("Review2"),
-                          os.walk("Review3"))
+                          os.walk("Review2"))
+                          
 
    data = []
    for path in subdirectories:
@@ -151,6 +152,7 @@ if __name__ == '__main__':
    print()
    print(remove_stopwords("Hello this is my sentence"))
 
+   # List of reviews, which are dictionaries
    train = scrape1()
    test = scrape2()
 
@@ -203,6 +205,25 @@ if __name__ == '__main__':
                test_tuple = (paragraph_features(paragraph), review['OVERALL'])
                test_data.append(test_tuple)
                cnt = cnt + 1
+
+   good_ratings = 0
+   bad_ratings = 0
+   for (feature,rating) in train_data:
+      if rating == 1:
+         good_ratings = good_ratings + 1
+      if rating == 0:
+         bad_ratings = bad_ratings + 1
+   print("Training... Good ratings: " + str(good_ratings) + " | Bad ratings: " + str(bad_ratings))
+
+   good_ratings = 0
+   bad_ratings = 0
+   for (feature,rating) in test_data:
+      if rating == 1:
+         good_ratings = good_ratings + 1
+      if rating == 0:
+         bad_ratings = bad_ratings + 1
+   
+   print("Testing... Good ratings: " + str(good_ratings) + " | Bad ratings: " + str(bad_ratings))
 
    print(train_data[:5])
    print(test_data[:5])
