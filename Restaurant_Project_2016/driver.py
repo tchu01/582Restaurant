@@ -6,12 +6,21 @@ import re
 #There is a random ass extra directory, this is sort of a fix
 full = 0
 
+def test_string():
+	g = 'NAME: Arayas PlaceADDRESS: 10246 Main St cCITY: BellevueFOOD: 5SERVICE: 4VENUE: 5RATING: 5WRITTEN REVIEW:'
+	regex = ['REVIEWER', 'NAME', 'ADDRESS', 'CITY', 'FOOD', 'SERVICE', 'VENUE', 'OVERALL']
+	regex_pattern = "|".join(regex)
+	reg = "(?=(" + regex[0] + "(:*)))(.*)(?=" + "|".join(regex) + "*)"
+	print(reg)
+	mtch = re.match(reg, 'NAME: Arayas Place')
+	print(mtch.group(1))
+
 def main():
 	subdirectories = chain(os.walk("Review1"), 
 						   os.walk("Review2"), 
 						   os.walk("Review3"))
 
-	subdirectories = os.walk("Review1")
+	#subdirectories = os.walk("Review1")
 
 	data = []
 	for path in subdirectories:
