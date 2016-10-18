@@ -139,7 +139,71 @@ def scrape2():
 
    return data
 
+
+def bin_lex(num):
+   if num <= .6:
+      return 'low_lex'
+   if num <= .7:
+      return 'mid_low_lex'
+   if num >= .9:
+      return 'high_lex'
+   if num >= .8:
+      return 'mid_high_lex'
+
+def group_pars(review):
+   return '  '.join(review)
+
+def predict_author():
+   #use lexical diversity and average sentence length
+
+   train_data = []
+   test_data = []
+   #train
+   for rev in scrape1():
+      data = ()
+      if rev['REVIEWER']:
+         data = data + (rev['REVIEWER'],)
+      if rev['review']:
+         data = data + (group_pars(rev['review']),)
+      data = data + (bin_lex(lexical_diversity(data[1].split())),)
+      #print("Reviewer: %s  Div: %s Div_minus_bin: %s" % (data[0], bin_lex(lexical_diversity(data[1].split())), lexical_diversity(data[1].split())))
+      data = data + (avg_sent_length(data[1].split('.')),)
+      train_data.append(data)
+
+   #test
+   for rev in scrape2():
+      data = ()
+      if rev['REVIEWER']:
+         data = data + (rev['REVIEWER'],)
+      if rev['review']:
+         data = data + (group_pars(rev['review']),)
+      data = data + (bin_lex(lexical_diversity(data[1].split())),)
+      data = data + (avg_sent_length(data[1].split('.')),)
+      test_data.append(data)
+
+   train_data = [({'lex_dev' : i[2], 'sent_len' : i[3]}, i[0]) for i in train_data]
+   test_data = [({'lex_dev' : i[2], 'sent_len' : i[3]}, i[0]) for i in test_data]
+
+   classifier = nltk.NaiveBayesClassifier.train(train_data)
+   #precision = nltk.classify.precision(classifier, test_data)
+   #recall = nltk.classify.recall(classifier, test_data)
+   #print("F1 Score %s" % (2 * (precision * recall) / (precision + recall)))
+   print("Accuracy: ",nltk.classify.accuracy(classifier,test_data))
+   print(classifier.show_most_informative_features(20))   
+
+
+
+
+
+
+
+tr = True
+
+
 if __name__ == '__main__':
+   #if tr:
+   #   predict_author()
+         
    # Testing helper functions
    text = ["hello", "my", "name", "is", "Tim", "Tim", "hello", "good", "bad", "horrible"]
    common = common_words(text, 2)
