@@ -10,20 +10,20 @@ def main():
          print("Team Members: Timothy Chu and Sam Lakes")
          return
       else:
-         print("Looking for folder: " + str(sys.argv[1]))
          path = sys.argv[1]
 
          # Find path to directory
-         if os.path.isabs(sys.argv[1]) is True:
-            print("True")
-            print(sys.argv[1])
-         else:
-            print("False")
-            print(os.path.abspath('.'))
+         if os.path.isabs(sys.argv[1]) is False:
+            path = os.path.abspath(sys.argv[1])
 
          # Check if directory has "training" and "test" directories
+         if os.path.isdir(path + "/test") is True and os.path.isdir(path + "/training") is True:
+            # Scrape training/test folders
+            print("Found test and training directories")
 
-         # Else ... create own test/training set
+         else:
+            # Else ... create own test/training set
+            print("No test and training directories... creating own test/training set")
 
 if __name__ == '__main__':
    main()

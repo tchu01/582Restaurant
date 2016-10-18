@@ -1,4 +1,4 @@
-import os, re, random, operator, nltk
+import os, re, random, operator, nltk, collections
 import review_scraper as rs
 import copy
 from copy import deepcopy
@@ -72,7 +72,13 @@ def count_bad_keywords(text):
 
 # Assumes sents passed in as list of sentences, which is assumed to be list of words.
 def avg_sent_length(sents):
-   return sum([len(sent) for sent in sents]) // len(sents)      
+   average = sum([len(sent) for sent in sents]) // len(sents)      
+   if average > 0 and average <= 10:
+      return 'short_avg'
+   elif average > 10 and average < 15:
+      return 'medium_avg'
+   else:
+      return 'high_avg'
 
 # Assumes paragraph is a list of paragraphs
 def paragraph_features(paragraph):
@@ -94,7 +100,6 @@ def scrape1():
    subdirectories = chain(os.walk("Review1"),
                           os.walk("Review2"))
                           
-
    data = []
    for path in subdirectories:
       if len(path[1]) == full:
@@ -214,6 +219,7 @@ if __name__ == '__main__':
       if rating == 0:
          bad_ratings = bad_ratings + 1
    print("Training... Good ratings: " + str(good_ratings) + " | Bad ratings: " + str(bad_ratings))
+   print("Good/Total: " + str(good_ratings/(good_ratings+bad_ratings)))
 
    good_ratings = 0
    bad_ratings = 0
@@ -222,11 +228,11 @@ if __name__ == '__main__':
          good_ratings = good_ratings + 1
       if rating == 0:
          bad_ratings = bad_ratings + 1
-   
    print("Testing... Good ratings: " + str(good_ratings) + " | Bad ratings: " + str(bad_ratings))
+   print("Good/Total: " + str(good_ratings/(good_ratings+bad_ratings)))
 
-   print(train_data[:5])
-   print(test_data[:5])
+   #print(train_data[:5])
+   #print(test_data[:5])
    
    classifier = nltk.NaiveBayesClassifier.train(train_data)
    print("Accuracy: ",nltk.classify.accuracy(classifier,test_data))
