@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from bs4 import BeautifulSoup, NavigableString, Tag
 import unicodedata
 import re
@@ -13,8 +15,7 @@ regex_format = ['Reviewer', 'Name', 'Address', 'City', 'Food', 'Service', 'Venue
 
 def scrape_page(page, reviewer):
 	data_dict = {}
-	open_page = open(page, 'r', encoding='utf8')
-	soup = BeautifulSoup(open_page, "html.parser")
+	soup = BeautifulSoup(open(page, 'r', encoding='utf8'), "html.parser")
 	p_stuff = [p.get_text().encode('utf-8') for p in soup.find_all('p')]
 	p_stuff = [element for element in p_stuff if len(element) > 3]
 	regexs= [("b*'*NAME:*(.*)'*", 'NAME'),
@@ -96,11 +97,6 @@ def clean_dict(d_dict, dict_rev):
 	d_dict['VENUE'] = float(d_dict['VENUE'])
 
 	d_dict['OVERALL_ORIG'] = d_dict['OVERALL']
-   
-	d_dict['OVERALL_RATING'] = d_dict['OVERALL']
-	d_dict['FOOD_RATING'] = d_dict['FOOD']
-	d_dict['SERVICE_RATING'] = d_dict['SERVICE']
-	d_dict['VENUE_RATING'] = d_dict['VENUE']
 
 	d_dict['OVERALL'] = binary(d_dict['OVERALL'])
 	d_dict['FOOD'] = binary(d_dict['FOOD'])
