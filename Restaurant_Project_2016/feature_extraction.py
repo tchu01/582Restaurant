@@ -360,7 +360,7 @@ def append_bigrams(ap_dict, rev_com, corp_com):
       it += 1
    return dict_cpy
 
-def predict_author(train_scrape, test_scrape):
+def predict_authorship_classifier(train_scrape, test_scrape):
    #use lexical diversity and average sentence length
    corpus_dist_commons = nltk.FreqDist(make_corpus(train_scrape)).most_common()[100:130]
    train_data = []
@@ -396,16 +396,19 @@ def predict_author(train_scrape, test_scrape):
       #print(rev_dict)
       test_data.append((rev_dict, reviewer))
 
-   classifier = nltk.NaiveBayesClassifier.train(train_data)
-   refsets = collections.defaultdict(set)
-   testsets = collections.defaultdict(set)
-   for i, (feats, label) in enumerate(testsets):
-      refsets[label].add(i)
-      observed = classifier.classify(feats)
-      testsets[observed].add(i)
+   return train_data, test_data
+
+
+   #classifier = nltk.NaiveBayesClassifier.train(train_data)
+   #refsets = collections.defaultdict(set)
+   #testsets = collections.defaultdict(set)
+   #for i, (feats, label) in enumerate(testsets):
+    #  refsets[label].add(i)
+     # observed = classifier.classify(feats)
+      #testsets[observed].add(i)
    
-   print("Accuracy: ",nltk.classify.accuracy(classifier,test_data))
-   print(classifier.show_most_informative_features(20))   
+  # print("Accuracy: ",nltk.classify.accuracy(classifier,test_data))
+   #print(classifier.show_most_informative_features(20))   
  
 
 
