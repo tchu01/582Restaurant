@@ -10,14 +10,7 @@ import re
 escapes = ''.join([chr(char) for char in range(1, 32)])
 regex = ['REVIEWER', 'NAME', 'ADDRESS', 'CITY', 'FOOD', 'SERVICE', 'VENUE', 'OVERALL']
 regex_format = ['Reviewer', 'Name', 'Address', 'City', 'Food', 'Service', 'Venue', 'Overall']
-regexs= [("b*'*NAME:*(.*)'*", 'NAME'),
-		 ("b*'*ADDRESS:*(.*)'*", 'ADDRESS'),
-		 ("b*'*CITY:*(.*)'*", 'CITY'),
-		 ("b*'*FOOD:*(.*)'*", 'FOOD'),
-		 ("b*'*SERVICE:*(.*)'*", 'SERVICE'),
-		 ("b*'*VENUE:*(.*)'*", 'VENUE'),
-		 ("b*'*OVERALL:*(.*)'*", 'OVERALL'),
-		 ("b*'*RATING:*(.*)'*", 'RATING')]
+
 
 
 def scrape_page(page, reviewer):
@@ -25,7 +18,15 @@ def scrape_page(page, reviewer):
 	soup = BeautifulSoup(open(page, 'r', encoding='utf8'), "html.parser")
 	p_stuff = [p.get_text().encode('utf-8') for p in soup.find_all('p')]
 	p_stuff = [element for element in p_stuff if len(element) > 3]
-
+	regexs= [("b*'*NAME:*(.*)'*", 'NAME'),
+			 ("b*'*ADDRESS:*(.*)'*", 'ADDRESS'),
+		 	 ("b*'*CITY:*(.*)'*", 'CITY'),
+			 ("b*'*FOOD:*(.*)'*", 'FOOD'),
+			 ("b*'*SERVICE:*(.*)'*", 'SERVICE'),
+			 ("b*'*VENUE:*(.*)'*", 'VENUE'),
+			 ("b*'*OVERALL:*(.*)'*", 'OVERALL'),
+			 ("b*'*RATING:*(.*)'*", 'RATING'),
+			 ("b*'*REVIEWER:*(.*)'*", 'REVIEWER')]
 	if len(p_stuff) == 1:
 		#go through entire review again, separate everything by br tags
 		p_stuff = []
@@ -60,7 +61,10 @@ def scrape_page(page, reviewer):
 	#for p in p_stuff:
 	#	print(p)
 
-	data_dict['REVIEWER'] = reviewer
+	if reviewer != None:
+		data_dict['REVIEWER'] = reviewer
+		regexs = regexs[0:-1]
+
 	for reg in regexs:
 		#print('Reg[1]: %s' % reg[1])
 		reg_found = False
@@ -91,6 +95,8 @@ def clean_dict(d_dict, dict_rev):
 	d_dict['FOOD'] = float(d_dict['FOOD'])
 	d_dict['SERVICE'] = float(d_dict['SERVICE'])
 	d_dict['VENUE'] = float(d_dict['VENUE'])
+
+	d_dict['OVERALL_ORIG'] = d_dict['OVERALL']
 
 	d_dict['OVERALL'] = binary(d_dict['OVERALL'])
 	d_dict['FOOD'] = binary(d_dict['FOOD'])
