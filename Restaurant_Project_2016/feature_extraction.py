@@ -1,6 +1,7 @@
 import os, re, random, operator, nltk, collections
 import review_scraper as rs
 import copy
+import math
 from copy import deepcopy
 from itertools import chain
 from nltk import pos_tag
@@ -136,29 +137,77 @@ def paragraph_features(paragraph, good_words, bad_words):
       result_movies = 'more_bad_words'
    '''
       
+   '''
    reduced_paragraph = [word for word in split_paragraph_by_space if word.lower() not in sw.words('english')
                                                                   and word.lower() != 'food' and word.lower() != 'service'
                                                                   and word.lower() != 'venue' and word.lower() != 'restaurant'] 
-   #reduced_paragraph = [nltk.pos_tag([word])[0] for word in reduced_paragraph]
-   #reduced_paragraph = [word for (word, pos) in reduced_paragraph if pos == 'JJ']
+   reduced_paragraph = [nltk.pos_tag([word])[0] for word in reduced_paragraph]
+   reduced_paragraph = [word for (word, pos) in reduced_paragraph if pos == 'JJ']
    #print(reduced_paragraph)
    
    sentiment = sentiment_analysis(reduced_paragraph)
+   '''
 
    features = {#'lexical_diversity':lexical_diversity(split_paragraph_by_space), 
                #'average_sent_length':avg_sent_length(split_paragraph_by_period)
                #'word_counts_movies': result_movies,
-               'sentiment': sentiment,
+               #'sentiment': sentiment,
                'word_counts': result}
                
    return features 
    #return {}
 
+def review_features(review, good_words, bad_words, classifier):
+   average = 0;
+   count = 0;
+   if review['FOOD_RATING'] is not None:
+      average += review['FOOD_RATING']
+      count += 1
+   if review['SERVICE_RATING'] is not None:
+      average += review['SERVICE_RATING']
+      count += 1
+   if review['VENUE_RATING'] is not None:
+      average += review['VENUE_RATING']
+      count += 1
+   
+   if count != 0:
+      average = math.ceil(average/count)
+   else:
+      average = 'no_avg'
+
+   num_paragraphs = 0
+   paragraphs = []
+   for paragraph in review['review']:
+      if len(paragraph) > 15:
+         paragraphs.append(paragraph)      
+         num_paragraphs += 1
+      if num_paragraphs == 4:
+         break
+   
+   counter = {'1': 0, '0': 0}
+   num_ones = 0
+   num_zeroes = 0
+   for paragraph in paragraphs:
+      if classifier.classify(paragraph_features(paragraph, good_words, bad_words)) == 1:
+         num_ones += 1
+      else:
+         num_zeroes += 1
+
+   average_predicted_scores = 0
+   if num_ones > num_zeroes:
+      average_predicted_score = 1
+   else:
+      average_predicted_score = 0
+
+   features = {'average_scores': average,
+               'prediction': average_predicted_score}
+   return features
+
 full = 0
 
 def scrape1():
    subdirectories = chain(os.walk("Review1"),
-                          os.walk("Review2"))
+                          os.walk("Review3"))
                           
    data = []
    for path in subdirectories:
@@ -179,7 +228,7 @@ def scrape1():
    return data
 
 def scrape2():
-   subdirectories = os.walk("Review3")
+   subdirectories = os.walk("Review2")
 
    data = []
    for path in subdirectories:
@@ -199,6 +248,56 @@ def scrape2():
 
    return data
 
+def append_reviews(review_set, binary_good_or_bad):
+   words = []
+   for review in review_set:
+      cnt = 0
+      for paragraph in review['review']:
+         if len(paragraph) > 15: 
+            if cnt == 0 and review['FOOD'] == binary_good_or_bad:
+               for word in paragraph.split():
+                  words.append(word)
+            elif cnt == 1 and review['SERVICE'] == binary_good_or_bad:
+               for word in paragraph.split():
+                  words.append(word)
+            elif cnt == 2 and review['VENUE'] == binary_good_or_bad:
+               for word in paragraph.split():
+                  words.append(word)
+            if cnt == 3 and review['OVERALL'] == binary_good_or_bad:
+               for word in paragraph.split():
+                  words.append(word)
+   return words
+
+def naive_bayes_tuples_e1(review_set, good_words, bad_words):
+   data = []
+   for review in review_set:
+      cnt = 0
+      for paragraph in review['review']:
+         if len(paragraph) > 15:
+            if cnt == 0:
+               review_tuple = (paragraph_features(paragraph, good_words, bad_words), review['FOOD'])
+               data.append(review_tuple)
+               cnt = cnt + 1
+            elif cnt == 1:
+               review_tuple = (paragraph_features(paragraph, good_words, bad_words), review['SERVICE'])
+               data.append(review_tuple)
+               cnt = cnt + 1
+            elif cnt == 2:
+               review_tuple = (paragraph_features(paragraph, good_words, bad_words), review['VENUE'])
+               data.append(review_tuple)
+               cnt = cnt + 1
+            elif cnt == 3:
+               review_tuple = (paragraph_features(paragraph, good_words, bad_words), review['OVERALL'])
+               data.append(review_tuple)
+               cnt = cnt + 1
+   return data
+
+def naive_bayes_tuples_e2(review_set, good_words, bad_words, classifier):
+   data = []
+   for review in review_set:
+      review_tuple = (review_features(review, good_words, bad_words, classifier), review['OVERALL_RATING'])
+      data.append(review_tuple)
+   return data
 
 def bin_lex(num):
    if num <= .6:
@@ -287,24 +386,7 @@ if __name__ == '__main__':
    train = scrape1()
    test = scrape2()
 
-   good_words = []
-   for review in train:
-      cnt = 0
-      for paragraph in review['review']:
-         if len(paragraph) > 15: 
-            if cnt == 0 and review['FOOD'] == 1:
-               for word in paragraph.split():
-                  good_words.append(word)
-            elif cnt == 1 and review['SERVICE'] == 1:
-               for word in paragraph.split():
-                  good_words.append(word)
-            elif cnt == 2 and review['VENUE'] == 1:
-               for word in paragraph.split():
-                  good_words.append(word)
-            if cnt == 3 and review['OVERALL'] == 1:
-               for word in paragraph.split():
-                  good_words.append(word)
-
+   good_words = append_reviews(train, 1)
    good_words = [word.lower() for word in good_words if word.lower() not in sw.words("english")
                                                      and word.lower() != 'food' and word.lower() != 'service'
                                                      and word.lower() != 'venue' and word.lower() != 'restaurant'] 
@@ -313,24 +395,7 @@ if __name__ == '__main__':
    #good_words = common_words(good_words, 30)
    #print(common_words(good_words, 30))
 
-   bad_words = []
-   for review in train:
-      cnt = 0
-      for paragraph in review['review']:
-         if len(paragraph) > 15: 
-            if cnt == 0 and review['FOOD'] == 0:
-               for word in paragraph.split():
-                  bad_words.append(word)
-            elif cnt == 1 and review['SERVICE'] == 0:
-               for word in paragraph.split():
-                  bad_words.append(word)
-            elif cnt == 2 and review['VENUE'] == 0:
-               for word in paragraph.split():
-                  bad_words.append(word)
-            if cnt == 3 and review['OVERALL'] == 0:
-               for word in paragraph.split():
-                  bad_words.append(word)
-
+   bad_words = append_reviews(train, 0)
    bad_words = [word.lower() for word in bad_words if word.lower() not in sw.words("english")
                                    and word.lower() != 'food' and word.lower() != 'service'
                                    and word.lower() != 'venue' and word.lower() != 'restaurant'] 
@@ -339,55 +404,8 @@ if __name__ == '__main__':
    #bad_words = common_words(bad_words, 30)
    #print(common_words(bad_words, 30))
 
-   train_data = []
-   for review in train:
-      #print()
-      #print("Reviewer: " + str(review['REVIEWER']))
-      cnt = 0
-      for paragraph in review['review']:
-         if len(paragraph) > 15:
-            #print("Paragraph: " + str(paragraph))
-            if cnt == 0:
-               train_tuple = (paragraph_features(paragraph, good_words, bad_words), review['FOOD'])
-               train_data.append(train_tuple)
-               cnt = cnt + 1
-            elif cnt == 1:
-               train_tuple = (paragraph_features(paragraph, good_words, bad_words), review['SERVICE'])
-               train_data.append(train_tuple)
-               cnt = cnt + 1
-            elif cnt == 2:
-               train_tuple = (paragraph_features(paragraph, good_words, bad_words), review['VENUE'])
-               train_data.append(train_tuple)
-               cnt = cnt + 1
-            elif cnt == 3:
-               train_tuple = (paragraph_features(paragraph, good_words, bad_words), review['OVERALL'])
-               train_data.append(train_tuple)
-               cnt = cnt + 1
-
-   test_data = []
-   for review in test:
-      #print()
-      #print("Reviewer: " + str(review['REVIEWER']))
-      cnt = 0
-      for paragraph in review['review']:
-         if len(paragraph) > 15:
-            #print("Paragraph: " + str(paragraph))
-            if cnt == 0:
-               test_tuple = (paragraph_features(paragraph, good_words, bad_words), review['FOOD'])
-               test_data.append(test_tuple)
-               cnt = cnt + 1
-            elif cnt == 1:
-               test_tuple = (paragraph_features(paragraph, good_words, bad_words), review['SERVICE'])
-               test_data.append(test_tuple)
-               cnt = cnt + 1
-            elif cnt == 2:
-               test_tuple = (paragraph_features(paragraph, good_words, bad_words), review['VENUE'])
-               test_data.append(test_tuple)
-               cnt = cnt + 1
-            elif cnt == 3:
-               test_tuple = (paragraph_features(paragraph, good_words, bad_words), review['OVERALL'])
-               test_data.append(test_tuple)
-               cnt = cnt + 1
+   train_data = naive_bayes_tuples_e1(train, good_words, bad_words)
+   test_data = naive_bayes_tuples_e1(test, good_words, bad_words)
 
    good_ratings = 0
    bad_ratings = 0
@@ -429,14 +447,4 @@ if __name__ == '__main__':
    print("Precision For Good Rating: " + str(precision(refsets[1], testsets[1])))
    print("Recall For Good Rating: " + str(recall(refsets[1], testsets[1])))
    print("F-measure For Good Rating: " + str(f_measure(refsets[1], testsets[1])))
-
-   '''
-   print("Precision For Bad Sentiment: " + str(precision(refsets['negative_sentiment'], testsets['negative_sentiment'])))
-   print("Recall For Bad Sentiment: " + str(recall(refsets['negative_sentiment'], testsets['negative_sentiment'])))
-   print("F-measure For Bad Sentiment: " + str(f_measure(refsets['negative_sentiment'], testsets['negative_sentiment'])))
-   print("Precision For Good Sentiment: " + str(precision(refsets['positive_sentiment'], testsets['positive_sentiment'])))
-   print("Recall For Good Sentiment: " + str(recall(refsets['positive_sentiment'], testsets['positive_sentiment'])))
-   print("F-measure For Good Sentiment: " + str(f_measure(refsets['positive_sentiment'], testsets['positive_sentiment'])))
-   '''
-
    print(classifier.show_most_informative_features(20))
