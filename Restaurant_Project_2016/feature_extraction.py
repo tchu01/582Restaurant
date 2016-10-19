@@ -183,8 +183,7 @@ def review_features(review, good_words, bad_words, classifier):
          num_paragraphs += 1
       if num_paragraphs == 4:
          break
-   
-   counter = {'1': 0, '0': 0}
+   ''' 
    num_ones = 0
    num_zeroes = 0
    for paragraph in paragraphs:
@@ -195,12 +194,12 @@ def review_features(review, good_words, bad_words, classifier):
 
    average_predicted_scores = 0
    if num_ones > num_zeroes:
-      average_predicted_score = 1
+      average_predicted_score = 'one'
    else:
-      average_predicted_score = 0
-
-   features = {'average_scores': average,
-               'prediction': average_predicted_score}
+      average_predicted_score = 'zero'
+   '''
+   features = {#'prediction': average_predicted_score},
+               'average_scores': average}
    return features
 
 full = 0
@@ -299,6 +298,13 @@ def naive_bayes_tuples_e2(review_set, good_words, bad_words, classifier):
       data.append(review_tuple)
    return data
 
+def naive_bayes_tuples_e3(review_set, good_words, bad_words):
+   data = []
+   for review in review_set:
+      review_tuple = (phenomena_features(review, good_words, bad_words), review['OVERALL_RATING'])
+      data.append(review_tuple)
+   return data
+
 def bin_lex(num):
    if num <= .6:
       return 'low_lex'
@@ -312,96 +318,49 @@ def bin_lex(num):
 def group_pars(review):
    return '  '.join(review)
 
-
-def avg_par_len(review):
-   split_pars_lens = [len(par.split()) for par in review['review'].copy()]
-   avg_len = sum(split_pars_lens) / len(split_pars_lens)
-   if avg_len < 60:
-      return 'low'
-   if avg_len < 100:
-      return 'mid'
-   if avg_len > 99:
-      return 'high'
-
-def make_bigrams(review):
-   bigram_pars = [nltk.bigrams(par.split()) for par in review['review'].copy()]
-   bigrams = []
-   for bigram_par in bigram_pars:
-      for bigram in bigram_par:
-         bigrams.append(bigram)
-   return bigrams
-
-
-def make_corpus(reviews):
-   bigrams = []
-   for review in reviews:
-      for bigram in make_bigrams(review):
-         bigrams.append(bigram)
-   return bigrams
-
-#get top 30
-#run through 
-
-def append_bigrams(ap_dict, rev_com, corp_com):
-   it = 0
-   corp = [i[0] for i in corp_com]
-   #print(corp)
-   dict_cpy = dict(ap_dict.copy())
-   for bigram in corp:
-      #print(bigram)
-      dict_cpy['bigram_' + str(it)] = bigram in corp
-      if bigram[0] in corp:
-         print("TRUE")
-      it += 1
-   return dict_cpy
-
-def predict_author(train_scrape, test_scrape):
+def predict_author():
    #use lexical diversity and average sentence length
-   corpus_dist_commons = nltk.FreqDist(make_corpus(train_scrape)).most_common()[100:130]
+
    train_data = []
    test_data = []
    #train
-   for rev in train_scrape:
-      rev_dict = {}
-      rev_bigrams_common = nltk.FreqDist(make_bigrams(rev)).most_common()[0:30]
-      pars = []
-      reviewer = ""
+   for rev in scrape1():
+      data = ()
       if rev['REVIEWER']:
-         reviewer = rev['REVIEWER']
+         data = data + (rev['REVIEWER'],)
       if rev['review']:
-         pars = group_pars(rev['review'])
-      rev_dict['lex_dev'] = bin_lex(lexical_diversity(pars.split()))
-      rev_dict['avg_par_len'] = avg_par_len(rev)
-      rev_dict = append_bigrams(rev_dict, rev_bigrams_common, corpus_dist_commons)
-      train_data.append((rev_dict, reviewer))
+         data = data + (group_pars(rev['review']),)
+      data = data + (bin_lex(lexical_diversity(data[1].split())),)
+      #print("Reviewer: %s  Div: %s Div_minus_bin: %s" % (data[0], bin_lex(lexical_diversity(data[1].split())), lexical_diversity(data[1].split())))
+      data = data + (avg_sent_length(data[1].split('.')),)
+      train_data.append(data)
 
    #test
-   for rev in test_scrape:
-      rev_dict = {}
-      rev_bigrams_common = nltk.FreqDist(make_bigrams(rev)).most_common()[0:30]
-      pars = []
-      reviewer = ""
+   for rev in scrape2():
+      data = ()
       if rev['REVIEWER']:
-         reviewer = rev['REVIEWER']
+         data = data + (rev['REVIEWER'],)
       if rev['review']:
-         pars = group_pars(rev['review'])
-      rev_dict['lex_dev'] = bin_lex(lexical_diversity(pars.split()))
-      rev_dict['avg_par_len'] = avg_par_len(rev)
-      rev_dict = append_bigrams(rev_dict, rev_bigrams_common, corpus_dist_commons)
-      #print(rev_dict)
-      test_data.append((rev_dict, reviewer))
+         data = data + (group_pars(rev['review']),)
+      data = data + (bin_lex(lexical_diversity(data[1].split())),)
+      data = data + (avg_sent_length(data[1].split('.')),)
+      test_data.append(data)
+
+   train_data = [({'lex_dev' : i[2], 'sent_len' : i[3]}, i[0]) for i in train_data]
+   test_data = [({'lex_dev' : i[2], 'sent_len' : i[3]}, i[0]) for i in test_data]
 
    classifier = nltk.NaiveBayesClassifier.train(train_data)
-   refsets = collections.defaultdict(set)
-   testsets = collections.defaultdict(set)
-   for i, (feats, label) in enumerate(testsets):
-      refsets[label].add(i)
-      observed = classifier.classify(feats)
-      testsets[observed].add(i)
-   
+   #precision = nltk.classify.precision(classifier, test_data)
+   #recall = nltk.classify.recall(classifier, test_data)
+   #print("F1 Score %s" % (2 * (precision * recall) / (precision + recall)))
    print("Accuracy: ",nltk.classify.accuracy(classifier,test_data))
    print(classifier.show_most_informative_features(20))   
-  
+
+
+
+
+
+
 
 tr = True
 

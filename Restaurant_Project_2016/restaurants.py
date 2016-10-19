@@ -79,7 +79,14 @@ def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_
    print("Precision For Average Score of 5: " + str(precision(refsets[5], testsets[5])))
    print("Recall For Average Score of 5: " + str(recall(refsets[5], testsets[5])))
    print("F-measure For Average Score of 5: " + str(f_measure(refsets[5], testsets[5])))
-
+   '''
+   print("Precision For Prediction of one: " + str(precision(refsets['one'], testsets['one'])))
+   print("Recall For Prediction of one: " + str(recall(refsets['one'], testsets['one'])))
+   print("F-measure For Prediction of one: " + str(f_measure(refsets['one'], testsets['one'])))
+   print("Precision For Prediction of zero: " + str(precision(refsets['zero'], testsets['zero'])))
+   print("Recall For Prediction of zero: " + str(recall(refsets['zero'], testsets['zero'])))
+   print("F-measure For Prediction of zero: " + str(f_measure(refsets['zero'], testsets['zero'])))
+   '''
    print(classifier.show_most_informative_features(20))
 
 def predict_author(train_data, test_data):
