@@ -2,6 +2,8 @@ import sys, os, random, nltk
 from itertools import chain
 from os import listdir
 from os.path import isfile, join
+import review_scraper.py as rs
+
 
 full = 0
 
@@ -41,10 +43,11 @@ def main():
          else:
             # Else ... create own test/training set
             print("No test and training directories... creating own test/training set")
-            train_set = ["Review1","Review2", "Review3"]
-            test_set = random.choice(rands)
-            rands.pop(test_set)
-            train_subs = list(chain.from_iterable(train_set))
+             train_set = ["Review1","Review2", "Review3"]
+            test_set = random.choice(train_set)
+            train_set.pop(train_set.index(test_set))
+            train_subs = [path + '/' + tset for tset in train_set]
+            train_subs = chain.from_iterable([os.walk(i) for i in train_subs])
 
             for file_path in train_subs:
               if len(file_path[1]) == full:
