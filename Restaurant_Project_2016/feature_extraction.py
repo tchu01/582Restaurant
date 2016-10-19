@@ -3,7 +3,12 @@ import review_scraper as rs
 import copy
 from copy import deepcopy
 from itertools import chain
+from nltk import pos_tag
+from nltk.text import TextCollection
+from nltk.metrics.scores import precision, recall, f_measure
 from nltk.corpus import stopwords as sw
+from nltk.corpus import sentiwordnet as swn
+from nltk.corpus import movie_reviews as mr
 
 # Removes stopwords from a paragraph
 def remove_stopwords(paragraph):
@@ -53,19 +58,19 @@ good_keywords = ['good','great','excellent','fantastic', 'love', 'like']
 bad_keywords = ['bad','terrible','horrible','unsatisfactory', 'hate', 'dislike']
 
 # Assumes text passed in as list of words
-def count_good_keywords(text):
+def count_good_words(text, good_words):
    i = 0
    for words in text:
-      if words in good_keywords:
+      if words in good_words:
          i = i + 1
 
    return i
 
 # Assumes text passed in as list of words
-def count_bad_keywords(text):
+def count_bad_words(text, bad_words):
    i = 0
    for words in text:
-      if words in bad_keywords:
+      if words in bad_words:
          i = i + 1
 
    return i
@@ -80,17 +85,72 @@ def avg_sent_length(sents):
    else:
       return 'high_avg'
 
-# Assumes paragraph is a list of paragraphs
-def paragraph_features(paragraph):
-   split_paragraph_by_space = copy.deepcopy(paragraph)
-   split_paragraph_by_period = copy.deepcopy(paragraph)
+def sentiment_analysis(paragraph):
+   pos = 0
+   neg = 0
+   for word in paragraph:
+      senti_synsets = list(swn.senti_synsets(word, "a"))
+      if len(senti_synsets) > 0:
+         #print(senti_synsets[0])
+         pos = pos + senti_synsets[0].pos_score()
+         neg = neg + senti_synsets[0].neg_score()
+
+   #print("Pos: " + str(pos) + " NumPos: " + str(numpos))
+   #print("Neg: " + str(neg) + " NumNeg: " + str(numneg))
    
+   if pos > neg:
+      return 'positive_sentiment'
+   else:
+      return 'negative_sentiment'
+
+'''
+sw_list = sw.words("english")
+good_words_movies = mr.words(categories=['pos'])
+good_words_movies = nltk.FreqDist(word for word in good_words_movies if word.lower() not in sw_list and word.isalpha() == True).most_common(50)
+bad_words_movies = mr.words(categories=['neg'])
+bad_words_movies = nltk.FreqDist(word for word in bad_words_movies if word.lower() not in sw_list and word.isalpha() == True).most_common(50)
+#print(good_words_movies)
+#print(bad_words_movies)
+only_good_words_movies = list(set([word for word,count in good_words_movies]) - set([word for word,count in bad_words_movies]))
+only_bad_words_movies = list(set([word for word,count in bad_words_movies]) - set([word for word,count in good_words_movies]))
+#print(only_good_words_movies)
+#print(only_bad_words_movies)
+'''
+
+# Assumes paragraph is a list of paragraphs
+def paragraph_features(paragraph, good_words, bad_words):
+   split_paragraph_by_space = copy.deepcopy(paragraph)
    split_paragraph_by_space = split_paragraph_by_space.split()
-   split_paragraph_by_period = split_paragraph_by_period.split('.')
-   split_paragraph_by_period = [sentence.split() for sentence in split_paragraph_by_period]
+   
+   good_count = count_good_words(split_paragraph_by_space, good_words)
+   bad_count = count_bad_words(split_paragraph_by_space, bad_words)
+   result = 'more_good_words'
+   if good_count - bad_count < 0:
+      result = 'more_bad_words'
+
+   '''
+   good_count_movies = count_good_words(split_paragraph_by_space, only_good_words_movies)
+   bad_count_movies = count_bad_words(split_paragraph_by_space, only_bad_words_movies)
+   result_movies = 'more_good_words'
+   if good_count_movies - bad_count_movies < 0:
+      result_movies = 'more_bad_words'
+   '''
+      
+   reduced_paragraph = [word for word in split_paragraph_by_space if word.lower() not in sw.words('english')
+                                                                  and word.lower() != 'food' and word.lower() != 'service'
+                                                                  and word.lower() != 'venue' and word.lower() != 'restaurant'] 
+   #reduced_paragraph = [nltk.pos_tag([word])[0] for word in reduced_paragraph]
+   #reduced_paragraph = [word for (word, pos) in reduced_paragraph if pos == 'JJ']
+   #print(reduced_paragraph)
+   
+   sentiment = sentiment_analysis(reduced_paragraph)
 
    features = {#'lexical_diversity':lexical_diversity(split_paragraph_by_space), 
-               'average_sent_length':avg_sent_length(split_paragraph_by_period)} 
+               #'average_sent_length':avg_sent_length(split_paragraph_by_period)
+               #'word_counts_movies': result_movies,
+               'sentiment': sentiment,
+               'word_counts': result}
+               
    return features 
    #return {}
 
@@ -201,6 +261,7 @@ tr = True
 
 
 if __name__ == '__main__':
+   '''
    #if tr:
    #   predict_author()
          
@@ -219,11 +280,64 @@ if __name__ == '__main__':
    print("Avg sent length: " + str(avg_sent_length(sents)))
 
    print()
-   print(remove_stopwords("Hello this is my sentence"))
+   print(remove_stopwords("Hello this is my sentence also us like the a and of but i on"))
+   '''
 
    # List of reviews, which are dictionaries
    train = scrape1()
    test = scrape2()
+
+   good_words = []
+   for review in train:
+      cnt = 0
+      for paragraph in review['review']:
+         if len(paragraph) > 15: 
+            if cnt == 0 and review['FOOD'] == 1:
+               for word in paragraph.split():
+                  good_words.append(word)
+            elif cnt == 1 and review['SERVICE'] == 1:
+               for word in paragraph.split():
+                  good_words.append(word)
+            elif cnt == 2 and review['VENUE'] == 1:
+               for word in paragraph.split():
+                  good_words.append(word)
+            if cnt == 3 and review['OVERALL'] == 1:
+               for word in paragraph.split():
+                  good_words.append(word)
+
+   good_words = [word.lower() for word in good_words if word.lower() not in sw.words("english")
+                                                     and word.lower() != 'food' and word.lower() != 'service'
+                                                     and word.lower() != 'venue' and word.lower() != 'restaurant'] 
+   #good_words = [nltk.pos_tag([word])[0] for word in good_words]
+   #good_words = [word for (word, pos) in good_words if pos == 'JJ']
+   #good_words = common_words(good_words, 30)
+   #print(common_words(good_words, 30))
+
+   bad_words = []
+   for review in train:
+      cnt = 0
+      for paragraph in review['review']:
+         if len(paragraph) > 15: 
+            if cnt == 0 and review['FOOD'] == 0:
+               for word in paragraph.split():
+                  bad_words.append(word)
+            elif cnt == 1 and review['SERVICE'] == 0:
+               for word in paragraph.split():
+                  bad_words.append(word)
+            elif cnt == 2 and review['VENUE'] == 0:
+               for word in paragraph.split():
+                  bad_words.append(word)
+            if cnt == 3 and review['OVERALL'] == 0:
+               for word in paragraph.split():
+                  bad_words.append(word)
+
+   bad_words = [word.lower() for word in bad_words if word.lower() not in sw.words("english")
+                                   and word.lower() != 'food' and word.lower() != 'service'
+                                   and word.lower() != 'venue' and word.lower() != 'restaurant'] 
+   #bad_words = [nltk.pos_tag([word])[0] for word in bad_words]
+   #bad_words = [word for (word, pos) in bad_words if pos == 'JJ']
+   #bad_words = common_words(bad_words, 30)
+   #print(common_words(bad_words, 30))
 
    train_data = []
    for review in train:
@@ -234,19 +348,19 @@ if __name__ == '__main__':
          if len(paragraph) > 15:
             #print("Paragraph: " + str(paragraph))
             if cnt == 0:
-               train_tuple = (paragraph_features(paragraph), review['FOOD'])
+               train_tuple = (paragraph_features(paragraph, good_words, bad_words), review['FOOD'])
                train_data.append(train_tuple)
                cnt = cnt + 1
             elif cnt == 1:
-               train_tuple = (paragraph_features(paragraph), review['SERVICE'])
+               train_tuple = (paragraph_features(paragraph, good_words, bad_words), review['SERVICE'])
                train_data.append(train_tuple)
                cnt = cnt + 1
             elif cnt == 2:
-               train_tuple = (paragraph_features(paragraph), review['VENUE'])
+               train_tuple = (paragraph_features(paragraph, good_words, bad_words), review['VENUE'])
                train_data.append(train_tuple)
                cnt = cnt + 1
             elif cnt == 3:
-               train_tuple = (paragraph_features(paragraph), review['OVERALL'])
+               train_tuple = (paragraph_features(paragraph, good_words, bad_words), review['OVERALL'])
                train_data.append(train_tuple)
                cnt = cnt + 1
 
@@ -259,19 +373,19 @@ if __name__ == '__main__':
          if len(paragraph) > 15:
             #print("Paragraph: " + str(paragraph))
             if cnt == 0:
-               test_tuple = (paragraph_features(paragraph), review['FOOD'])
+               test_tuple = (paragraph_features(paragraph, good_words, bad_words), review['FOOD'])
                test_data.append(test_tuple)
                cnt = cnt + 1
             elif cnt == 1:
-               test_tuple = (paragraph_features(paragraph), review['SERVICE'])
+               test_tuple = (paragraph_features(paragraph, good_words, bad_words), review['SERVICE'])
                test_data.append(test_tuple)
                cnt = cnt + 1
             elif cnt == 2:
-               test_tuple = (paragraph_features(paragraph), review['VENUE'])
+               test_tuple = (paragraph_features(paragraph, good_words, bad_words), review['VENUE'])
                test_data.append(test_tuple)
                cnt = cnt + 1
             elif cnt == 3:
-               test_tuple = (paragraph_features(paragraph), review['OVERALL'])
+               test_tuple = (paragraph_features(paragraph, good_words, bad_words), review['OVERALL'])
                test_data.append(test_tuple)
                cnt = cnt + 1
 
@@ -300,4 +414,29 @@ if __name__ == '__main__':
    
    classifier = nltk.NaiveBayesClassifier.train(train_data)
    print("Accuracy: ",nltk.classify.accuracy(classifier,test_data))
+
+   refsets = collections.defaultdict(set)
+   testsets = collections.defaultdict(set)
+
+   for i, (feats, label) in enumerate(test_data):
+      refsets[label].add(i)
+      observed = classifier.classify(feats)
+      testsets[observed].add(i)
+
+   print("Precision For Bad Rating: " + str(precision(refsets[0], testsets[0])))
+   print("Recall For Bad Rating: " + str(recall(refsets[0], testsets[0])))
+   print("F-measure For Bad Rating: " + str(f_measure(refsets[0], testsets[0])))
+   print("Precision For Good Rating: " + str(precision(refsets[1], testsets[1])))
+   print("Recall For Good Rating: " + str(recall(refsets[1], testsets[1])))
+   print("F-measure For Good Rating: " + str(f_measure(refsets[1], testsets[1])))
+
+   '''
+   print("Precision For Bad Sentiment: " + str(precision(refsets['negative_sentiment'], testsets['negative_sentiment'])))
+   print("Recall For Bad Sentiment: " + str(recall(refsets['negative_sentiment'], testsets['negative_sentiment'])))
+   print("F-measure For Bad Sentiment: " + str(f_measure(refsets['negative_sentiment'], testsets['negative_sentiment'])))
+   print("Precision For Good Sentiment: " + str(precision(refsets['positive_sentiment'], testsets['positive_sentiment'])))
+   print("Recall For Good Sentiment: " + str(recall(refsets['positive_sentiment'], testsets['positive_sentiment'])))
+   print("F-measure For Good Sentiment: " + str(f_measure(refsets['positive_sentiment'], testsets['positive_sentiment'])))
+   '''
+
    print(classifier.show_most_informative_features(20))
