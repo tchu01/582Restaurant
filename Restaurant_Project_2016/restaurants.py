@@ -3,11 +3,11 @@ from os import listdir
 from os.path import isfile, join
 from itertools import chain
 from nltk.corpus import stopwords as sw
+from nltk.corpus import movie_reviews as mr
 from nltk.metrics.scores import precision, recall, f_measure
 
 import review_scraper as rs
 import feature_extraction as fe
-
 
 def paragraph_rating(train_data, test_data):
    print("Exercise 1")
@@ -92,8 +92,17 @@ def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_
 def predict_author(train_data, test_data):
    print("Exercise 4")
 
-def phenomena(train_data, test_data):
+def phenomena(train_data, test_data, good_words, bad_words):
    print("Exercise 2")
+   good_words_movie = mr.words(categories=['pos'])
+   bad_words_movie = mr.words(categories=['neg'])
+   good_words_movie = [nltk.pos_tag([word]) for word in good_words_movie]
+   print(good_words_movie)
+   bad_words_movie = [nltk.pos_tag([word]) for word in bad_words_movie]
+   print(bad_words_movie)
+
+
+   print(test_data)
 
 full = 0
 
@@ -158,7 +167,7 @@ def main():
       (exercise1_classifier, good_words, bad_words) = paragraph_rating(train_data, test_data)
       overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_words)
       predict_author(train_data, test_data)
-      phenomena(train_data, test_data)
+      phenomena(train_data, test_data, good_words, bad_words)
 
 if __name__ == '__main__':
    main()
