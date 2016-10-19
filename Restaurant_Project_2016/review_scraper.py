@@ -113,7 +113,7 @@ def clean_dict(d_dict, dict_rev):
 	return d_dict
 
 def binary(item):
-	if item < 2.5:
+	if item < 4:
 		return 0
 	else:
 		return 1
