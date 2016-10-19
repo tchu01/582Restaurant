@@ -100,6 +100,10 @@ def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_
 
 def predict_author(train_data, test_data):
    print("Exercise 4")
+   training, test = fe.predict_authorship_classifier(train_data, test_data)
+ 
+   classifier = nltk.NaiveBayesClassifier.train(training)
+   print("Accuracy: ",nltk.classify.accuracy(classifier,test))
 
 def phenomena(train_data, test_data, good_words, bad_words):
    print("Exercise 2")

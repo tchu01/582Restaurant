@@ -30,8 +30,8 @@ def main():
 	for path in subdirectories:
 		if len(path[1]) == full:
 			matchName = re.match(r'(.*) (.*)', path[0])
-			data.append(rs.scrape_page(path[0] + '\onlinetext.html', 
-				        matchName.group(1).split('\\')[1] + 
+			data.append(rs.scrape_page(path[0] + '/onlinetext.html', 
+				        matchName.group(1).split('/')[1] + 
 				        ' ' + 
 				        matchName.group(2).split('_')[0]))
 
