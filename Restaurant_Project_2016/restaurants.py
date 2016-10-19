@@ -47,6 +47,15 @@ def paragraph_rating(train_data, test_data):
    print(classifier.show_most_informative_features(20))
    return (classifier, good_words, bad_words)
 
+def predict_author(train_data, test_data):
+   print("Exercise 4")
+
+   training, test = fe.predict_authorship_classifier(train_data, test_data)
+
+   classifier = nltk.NaiveBayesClassifier.train(training)
+   print("Accuracy: ",nltk.classify.accuracy(classifier,test))
+
+
 def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_words):
    print("Exercise 3")
 
