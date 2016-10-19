@@ -1,4 +1,4 @@
-import sys, os, random, nltk, re, collections
+import sys, os, random, nltk, re, collections, math
 from os import listdir
 from os.path import isfile, join
 from itertools import chain
@@ -55,6 +55,11 @@ def predict_author(train_data, test_data):
    classifier = nltk.NaiveBayesClassifier.train(training)
    print("Accuracy: ",nltk.classify.accuracy(classifier,test))
 
+def mean(nums):
+   return float(sum(nums)) / max(len(nums), 1)
+
+def rmse(predictions, targets):
+    return math.sqrt((mean((predictions - targets) ** 2)))
 
 def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_words):
    print("Exercise 3")
