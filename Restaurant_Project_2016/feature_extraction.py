@@ -247,6 +247,16 @@ def scrape2():
 
    return data
 
+
+def append_reviews_overall(review_set):
+   words = []
+   for review in review_set:
+      for paragraph in review['review']:
+         if len(paragraph) > 15: 
+            for word in paragraph.split():
+                  words.append(word)
+   return words
+
 def append_reviews(review_set, binary_good_or_bad):
    words = []
    for review in review_set:

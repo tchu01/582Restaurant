@@ -47,20 +47,6 @@ def paragraph_rating(train_data, test_data):
    print(classifier.show_most_informative_features(20))
    return (classifier, good_words, bad_words)
 
-def predict_author(train_data, test_data):
-   print("Exercise 4")
-
-   training, test = fe.predict_authorship_classifier(train_data, test_data)
-
-   classifier = nltk.NaiveBayesClassifier.train(training)
-   print("Accuracy: ",nltk.classify.accuracy(classifier,test))
-
-def mean(nums):
-   return float(sum(nums)) / max(len(nums), 1)
-
-def rmse(predictions, targets):
-    return math.sqrt((mean((predictions - targets) ** 2)))
-
 def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_words):
    print("Exercise 3")
 
@@ -112,15 +98,77 @@ def predict_author(train_data, test_data):
 
 def phenomena(train_data, test_data, good_words, bad_words):
    print("Exercise 2")
-   good_words_movie = mr.words(categories=['pos'])
-   bad_words_movie = mr.words(categories=['neg'])
-   good_words_movie = [nltk.pos_tag([word]) for word in good_words_movie]
-   print(good_words_movie)
-   bad_words_movie = [nltk.pos_tag([word]) for word in bad_words_movie]
-   print(bad_words_movie)
+   #ratio of adj:noun for good reviews and bad reviews
+   good_words_pos = [nltk.pos_tag([word]) for word in good_words]
+   bad_words_pos = [nltk.pos_tag([word]) for word in bad_words]
+   good_nouns = 0
+   good_adjs = 0
+   bad_nouns = 0
+   bad_adjs = 0
+   for [(word,pos)] in good_words_pos:
+      if pos == 'NN':
+         good_nouns += 1
+      if pos == 'JJ':
+         good_adjs += 1   
+   for [(word,pos)] in bad_words_pos:
+      if pos == 'NN':
+         bad_nouns += 1
+      if pos == 'JJ':
+         bad_adjs += 1
 
+   print("Ratio of nouns to adjectives for good reviews: " + str(good_nouns) + '/' + str(good_adjs))
+   print(good_nouns/good_adjs)
+   print("Ratio of nouns to adjectives for bad reviews: " + str(bad_nouns) + '/' + str(bad_adjs))
+   print(bad_nouns/bad_adjs)
 
-   print(test_data)
+   print()
+   #top 50 words in good set not in bad set
+   #top 50 words in bad set not in good set
+   fdist_good = nltk.FreqDist(good_words).most_common(50)
+   top_50_good = [word for (word,freq) in fdist_good]
+   fdist_bad = nltk.FreqDist(bad_words).most_common(50)
+   top_50_bad = [word for (word,freq) in fdist_bad]
+   print("Top words in good set not in bad set (considering top 50): " + str(list(set(top_50_good) - set(top_50_bad))))
+   print("Top words in bad set not in good set (considering top 50): " + str(list(set(top_50_bad) - set(top_50_good))))
+
+   print()
+   #look at reviews with rating of 1 and rating of 5 and find common words
+   train_data_4s = [review for review in train_data if review['OVERALL_RATING'] == 4]
+   train_data_2s = [review for review in train_data if review['OVERALL_RATING'] == 2]
+   test_data_4s = [review for review in test_data if review['OVERALL_RATING'] == 4]
+   test_data_2s = [review for review in test_data if review['OVERALL_RATING'] == 2]
+
+   words_4 = fe.append_reviews_overall(train_data_4s)
+   words_4 = [word.lower() for word in words_4 
+              if word.lower() not in sw.words("english")
+              and word.lower() != 'food' and word.lower() != 'service'
+              and word.lower() != 'venue' and word.lower() != 'restaurant']
+
+   words_2 = fe.append_reviews_overall(train_data_2s)
+   words_2 = [word.lower() for word in words_2 
+              if word.lower() not in sw.words("english")
+              and word.lower() != 'food' and word.lower() != 'service'
+              and word.lower() != 'venue' and word.lower() != 'restaurant']
+   words_4t = fe.append_reviews_overall(test_data_4s)
+   words_4t = [word.lower() for word in words_4t
+               if word.lower() not in sw.words("english")
+               and word.lower() != 'food' and word.lower() != 'service'
+               and word.lower() != 'venue' and word.lower() != 'restaurant']
+   words_2t = fe.append_reviews_overall(test_data_2s)
+   words_2t = [word.lower() for word in words_2t
+               if word.lower() not in sw.words("english")
+               and word.lower() != 'food' and word.lower() != 'service'
+               and word.lower() != 'venue' and word.lower() != 'restaurant']
+   print("Common words in overall ratings of 4 (training): " + str(nltk.FreqDist(words_4).most_common(10)))
+   print("Common words in overall ratings of 2 (training): " + str(nltk.FreqDist(words_2).most_common(10)))
+   print("Common words in overall ratings of 4 (test): " + str(nltk.FreqDist(words_4t).most_common(10)))
+   print("Common words in overall ratings of 2 (test): " + str(nltk.FreqDist(words_2t).most_common(10)))
+
+def mean(nums):
+   return float(sum(nums)) / max(len(nums), 1)
+
+def rmse(predictions, targets):
+   return math.sqrt((mean((predictions - targets) ** 2)))
 
 full = 0
 
@@ -183,9 +231,9 @@ def main():
             test_data = [d for d in test_data if d]
 
       (exercise1_classifier, good_words, bad_words) = paragraph_rating(train_data, test_data)
+      phenomena(train_data, test_data, good_words, bad_words)
       overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_words)
       predict_author(train_data, test_data)
-      phenomena(train_data, test_data, good_words, bad_words)
 
 if __name__ == '__main__':
    main()
