@@ -377,6 +377,7 @@ def predict_authorship_classifier(train_scrape, test_scrape):
    test_data = []
    #train
    for rev in train_scrape:
+      #rev_dict, reviewer = author_features(rev, corpus_dist_commons)
       rev_dict = {}
       rev_bigrams_common = nltk.FreqDist(make_bigrams(rev)).most_common()[0:30]
       pars = []

@@ -45,6 +45,36 @@ def paragraph_rating(train_data, test_data):
    print("F-measure For Good Rating: " + str(f_measure(refsets[1], testsets[1])))
    
    print(classifier.show_most_informative_features(20))
+   
+   errors = []
+   count = 0
+   for review in test_data:
+      cur = 0
+      for paragraph in review['review']:
+         if len(paragraph) > 15:
+            if cur == 0:
+               cur += 1
+               count += 1
+               predicted = classifier.classify(fe.paragraph_features(paragraph, good_words, bad_words))
+               errors.append((predicted - review['FOOD']) ** 2)
+            elif cur == 1:
+               cur += 1
+               count += 1
+               predicted = classifier.classify(fe.paragraph_features(paragraph, good_words, bad_words))
+               errors.append((predicted - review['SERVICE']) ** 2)
+            elif cur == 2:
+               cur += 1
+               count += 1
+               predicted = classifier.classify(fe.paragraph_features(paragraph, good_words, bad_words))
+               errors.append((predicted - review['VENUE']) ** 2)
+            else:
+               cur += 1
+               count += 1
+               predicted = classifier.classify(fe.paragraph_features(paragraph, good_words, bad_words))
+               errors.append((predicted - review['OVERALL']) ** 2)
+
+   print("RMSE: " + str( math.sqrt(sum(errors)/count)))
+
    return (classifier, good_words, bad_words)
 
 def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_words):
@@ -89,12 +119,45 @@ def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_
    '''
    print(classifier.show_most_informative_features(20))
 
+   errors = []
+   count = 0
+   for review in test_data:
+      count += 1
+      predicted = classifier.classify(fe.review_features(review, good_words, bad_words, exercise1_classifier))
+      errors.append((predicted - review['OVERALL_RATING']) ** 2)
+
+   print("RMSE: " + str( math.sqrt(sum(errors)/count)))
+
 def predict_author(train_data, test_data):
    print("Exercise 4")
    training, test = fe.predict_authorship_classifier(train_data, test_data)
  
    classifier = nltk.NaiveBayesClassifier.train(training)
    print("Accuracy: ",nltk.classify.accuracy(classifier,test))
+
+   errors = []
+   count = 0      
+   corpus_dist_commons = nltk.FreqDist(fe.make_corpus(train_data)).most_common()[100:130]
+   for rev in test_data:
+      count += 1
+      rev_dict = {}
+      rev_bigrams_common = nltk.FreqDist(fe.make_bigrams(rev)).most_common()[0:30]
+      pars = []
+      reviewer = ""
+      if rev['REVIEWER']:
+         reviewer = rev['REVIEWER']
+      if rev['review']:
+         pars = fe.group_pars(rev['review'])
+      rev_dict['lex_dev'] = fe.bin_lex(fe.lexical_diversity(pars.split()))
+      rev_dict['avg_par_len'] = fe.avg_par_len(rev)
+      rev_dict = fe.append_bigrams(rev_dict, rev_bigrams_common, corpus_dist_commons)
+      predicted = classifier.classify(rev_dict)
+      if predicted == rev['REVIEWER']:
+         errors.append(0)
+      else:
+         errors.append(1)
+   
+   print("RMSE: " + str( math.sqrt(sum(errors)/count)))
 
 def phenomena(train_data, test_data, good_words, bad_words):
    print("Exercise 2")
