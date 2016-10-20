@@ -74,8 +74,14 @@ def paragraph_rating(train_data, test_data):
                errors.append((predicted - review['OVERALL']) ** 2)
 
    print("RMSE: " + str( math.sqrt(sum(errors)/count)))
+   confusion_matrix(test, classifier)
 
    return (classifier, good_words, bad_words)
+
+def confusion_matrix(real_vals, classifier):
+   pred_vals = classifier.classify_many([val[0] for val in real_vals])
+   cm = nltk.ConfusionMatrix([val[1] for val in real_vals], pred_vals)
+   print(cm.pretty_format(sort_by_count=True, show_percents=True, truncate=len(real_vals[0][0])))
 
 def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_words):
    print("Exercise 3")
@@ -127,6 +133,7 @@ def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_
       errors.append((predicted - review['OVERALL_RATING']) ** 2)
 
    print("RMSE: " + str( math.sqrt(sum(errors)/count)))
+   confusion_matrix(test, classifier)
 
 def predict_author(train_data, test_data):
    print("Exercise 4")
@@ -156,8 +163,8 @@ def predict_author(train_data, test_data):
          errors.append(0)
       else:
          errors.append(1)
-   
    print("RMSE: " + str( math.sqrt(sum(errors)/count)))
+   confusion_matrix(test, classifier)
 
 def phenomena(train_data, test_data, good_words, bad_words):
    print("Exercise 2")
