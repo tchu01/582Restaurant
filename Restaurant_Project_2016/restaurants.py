@@ -82,7 +82,7 @@ def confusion_matrix(real_vals, classifier):
    pred_vals = classifier.classify_many([val[0] for val in real_vals])
    cm = nltk.ConfusionMatrix([val[1] for val in real_vals], pred_vals)
    print("\nConfusion Matrix:\n")
-   print(cm.pretty_format(sort_by_count=True, show_percents=True, truncate=10))
+   print(cm.pretty_format(sort_by_count=True, show_percents=True, truncate=len(real_vals[0][0])))
 
 def overall_rating(train_data, test_data, exercise1_classifier, good_words, bad_words):
    print("Exercise 3")
